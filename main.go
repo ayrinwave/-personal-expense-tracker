@@ -27,16 +27,18 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// --- Инициализация зависимостей для Пользователей ---
+	// --- Инициализация зависимостей ---
 	userRepo := rep.NewUserRepo(db)
 	userService := service.NewUserService(userRepo, cfg.JWTSecret)
 
-	// --- Инициализация зависимостей для Расходов ---
 	expenseRepo := rep.NewExpenseRepo(db)
 	expenseService := service.NewExpenseService(expenseRepo)
 
-	// Теперь передаем оба сервиса в роутер
-	router := transport.NewRouter(userService, expenseService, cfg.JWTSecret)
+	categoryRepo := rep.NewCategoryRepo(db)
+	categoryService := service.NewCategoryService(categoryRepo)
+
+	// Теперь передаем все сервисы в роутер
+	router := transport.NewRouter(userService, expenseService, categoryService, cfg.JWTSecret)
 
 	log.Printf("Starting server on port %s", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, router); err != nil {

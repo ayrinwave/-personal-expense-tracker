@@ -3,12 +3,13 @@ package transport
 import (
 	"Personal-expense-tracking-system/service"
 	"encoding/json"
-	"github.com/go-chi/chi/v5"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
-// NewRouter теперь принимает оба сервиса и jwtSecret
-func NewRouter(userService *service.UserService, expenseService *service.ExpenseService, jwtSecret string) http.Handler {
+// NewRouter теперь принимает все сервисы и jwtSecret
+func NewRouter(userService *service.UserService, expenseService *service.ExpenseService, categoryService *service.CategoryService, jwtSecret string) http.Handler {
 	r := chi.NewRouter()
 
 	// --- Публичные маршруты ---
@@ -41,7 +42,14 @@ func NewRouter(userService *service.UserService, expenseService *service.Expense
 		r.Post("/api/expenses", eh.CreateExpense)
 		r.Get("/api/expenses", eh.GetExpenses)
 		r.Put("/api/expenses/{id}", eh.UpdateExpense)
-		r.Delete("/api/expenses/{id}", eh.DeleteExpense) // Добавлено здесь
+		r.Delete("/api/expenses/{id}", eh.DeleteExpense)
+
+		// --- Маршруты для категорий ---
+		ch := NewCategoryHandler(categoryService)
+		r.Post("/api/categories", ch.CreateCategory)
+		r.Get("/api/categories", ch.GetAllCategories)
+		r.Put("/api/categories/{id}", ch.UpdateCategory)
+		r.Delete("/api/categories/{id}", ch.DeleteCategory)
 	})
 
 	return r
