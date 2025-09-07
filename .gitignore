@@ -1,0 +1,9 @@
+# Go binaries
+*.exe
+*.exe~
+
+# IDE settings
+.idea/
+
+# Environment variables file - DO NOT COMMIT THIS
+.env
