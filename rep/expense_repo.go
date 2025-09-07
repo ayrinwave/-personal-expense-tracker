@@ -27,16 +27,17 @@ func (r *ExpenseRepo) Create(ctx context.Context, expense *models.Expense) error
 	return r.db.QueryRow(ctx, query, expense.UserID, expense.CategoryID, expense.Amount, expense.Note).Scan(&expense.ID, &expense.CreatedAt)
 }
 
-// GetAllByUserID возвращает все расходы для указанного пользователя
-func (r *ExpenseRepo) GetAllByUserID(ctx context.Context, userID int) ([]*models.Expense, error) {
+// GetAllByUserID возвращает страницу расходов для указанного пользователя
+func (r *ExpenseRepo) GetAllByUserID(ctx context.Context, userID int, limit int, offset int) ([]*models.Expense, error) {
 	query := `
 		SELECT id, user_id, category_id, amount, note, created_at
 		FROM expenses
 		WHERE user_id = $1
 		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3
 	`
 
-	rows, err := r.db.Query(ctx, query, userID)
+	rows, err := r.db.Query(ctx, query, userID, limit, offset)
 	if err != nil {
 		return nil, err
 	}

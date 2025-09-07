@@ -34,9 +34,11 @@ func (s *ExpenseService) CreateExpense(ctx context.Context, userID int, category
 	return expense, nil
 }
 
-// GetExpensesByUserID возвращает все расходы для указанного пользователя
-func (s *ExpenseService) GetExpensesByUserID(ctx context.Context, userID int) ([]*models.Expense, error) {
-	return s.repo.GetAllByUserID(ctx, userID)
+// GetExpensesByUserID возвращает страницу расходов для указанного пользователя
+func (s *ExpenseService) GetExpensesByUserID(ctx context.Context, userID int, page int, limit int) ([]*models.Expense, error) {
+	// Вычисляем смещение для SQL-запроса
+	offset := (page - 1) * limit
+	return s.repo.GetAllByUserID(ctx, userID, limit, offset)
 }
 
 // UpdateExpenseRequest содержит поля, которые можно обновить. Указатели используются для частичного обновления.

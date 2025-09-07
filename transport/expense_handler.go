@@ -42,7 +42,6 @@ func (h *ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Валидация входных данных
 	if errs := utils.ValidateStruct(&req); len(errs) > 0 {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
@@ -61,7 +60,7 @@ func (h *ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(expense)
 }
 
-// GetExpenses обрабатывает запрос на получение списка расходов пользователя
+// GetExpenses обрабатывает запрос на получение списка расходов пользователя с пагинацией
 func (h *ExpenseHandler) GetExpenses(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(UserIDKey).(int)
 	if !ok {
@@ -69,7 +68,28 @@ func (h *ExpenseHandler) GetExpenses(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expenses, err := h.service.GetExpensesByUserID(r.Context(), userID)
+	// Получаем параметры пагинации из URL, устанавливаем значения по умолчанию
+	pageStr := r.URL.Query().Get("page")
+	if pageStr == "" {
+		pageStr = "1"
+	}
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		http.Error(w, "invalid page parameter", http.StatusBadRequest)
+		return
+	}
+
+	limitStr := r.URL.Query().Get("limit")
+	if limitStr == "" {
+		limitStr = "10"
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		http.Error(w, "invalid limit parameter", http.StatusBadRequest)
+		return
+	}
+
+	expenses, err := h.service.GetExpensesByUserID(r.Context(), userID, page, limit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -100,7 +120,6 @@ func (h *ExpenseHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Валидация входных данных
 	if errs := utils.ValidateStruct(&req); len(errs) > 0 {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
