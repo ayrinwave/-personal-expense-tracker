@@ -3,7 +3,6 @@ package transport
 import (
 	"Personal-expense-tracking-system/service"
 	"Personal-expense-tracking-system/utils"
-	"encoding/json"
 	"log"
 	"net/http"
 )
@@ -29,52 +28,46 @@ type loginResponse struct {
 
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req userAuthRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+	if err := utils.DecodeJSON(r.Body, &req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	// Валидация входных данных
 	if errs := utils.ValidateStruct(&req); len(errs) > 0 {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{"errors": errs})
+		RespondWithJSON(w, http.StatusBadRequest, map[string]interface{}{"errors": errs})
 		return
 	}
 
 	user, err := h.service.Register(r.Context(), req.Email, req.Password)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+	RespondWithJSON(w, http.StatusCreated, user)
 }
 
 // Login обрабатывает запрос на вход пользователя
 func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req userAuthRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+	if err := utils.DecodeJSON(r.Body, &req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	// Валидация входных данных
 	if errs := utils.ValidateStruct(&req); len(errs) > 0 {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{"errors": errs})
+		RespondWithJSON(w, http.StatusBadRequest, map[string]interface{}{"errors": errs})
 		return
 	}
 
 	token, err := h.service.Login(r.Context(), req.Email, req.Password)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, "invalid email or password", http.StatusUnauthorized)
+		RespondWithError(w, http.StatusUnauthorized, "Invalid email or password")
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(loginResponse{Token: token})
+	RespondWithJSON(w, http.StatusOK, loginResponse{Token: token})
 }

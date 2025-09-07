@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -32,4 +34,9 @@ func ValidateStruct(s interface{}) []*ValidationError {
 	}
 
 	return errors
+}
+
+// DecodeJSON декодирует JSON из ридера в переданную структуру
+func DecodeJSON(r io.Reader, v interface{}) error {
+	return json.NewDecoder(r).Decode(v)
 }

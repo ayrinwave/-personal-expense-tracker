@@ -2,7 +2,6 @@ package transport
 
 import (
 	"Personal-expense-tracking-system/service"
-	"encoding/json"
 	"net/http"
 	"time"
 )
@@ -21,7 +20,7 @@ func NewStatsHandler(s *service.StatsService) *StatsHandler {
 func (h *StatsHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(UserIDKey).(int)
 	if !ok {
-		http.Error(w, "could not get user ID from context", http.StatusInternalServerError)
+		RespondWithError(w, http.StatusInternalServerError, "Could not get user ID from context")
 		return
 	}
 
@@ -37,14 +36,14 @@ func (h *StatsHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
 	if fromStr != "" {
 		from, err = time.Parse("2006-01-02", fromStr)
 		if err != nil {
-			http.Error(w, "invalid 'from' date format, use YYYY-MM-DD", http.StatusBadRequest)
+			RespondWithError(w, http.StatusBadRequest, "Invalid 'from' date format, use YYYY-MM-DD")
 			return
 		}
 	}
 	if toStr != "" {
 		to, err = time.Parse("2006-01-02", toStr)
 		if err != nil {
-			http.Error(w, "invalid 'to' date format, use YYYY-MM-DD", http.StatusBadRequest)
+			RespondWithError(w, http.StatusBadRequest, "Invalid 'to' date format, use YYYY-MM-DD")
 			return
 		}
 	}
@@ -52,10 +51,9 @@ func (h *StatsHandler) GetSummary(w http.ResponseWriter, r *http.Request) {
 	// Вызываем сервис для получения сводки
 	summary, err := h.service.GetExpenseSummary(r.Context(), userID, from, to)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(summary)
+	RespondWithJSON(w, http.StatusOK, summary)
 }

@@ -3,7 +3,6 @@ package transport
 import (
 	"Personal-expense-tracking-system/service"
 	"Personal-expense-tracking-system/utils"
-	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -28,40 +27,34 @@ type categoryRequest struct {
 // CreateCategory обрабатывает запрос на создание новой категории
 func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request) {
 	var req categoryRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+	if err := utils.DecodeJSON(r.Body, &req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	// Валидация входных данных
 	if errs := utils.ValidateStruct(&req); len(errs) > 0 {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{"errors": errs})
+		RespondWithJSON(w, http.StatusBadRequest, map[string]interface{}{"errors": errs})
 		return
 	}
 
 	category, err := h.service.CreateCategory(r.Context(), req.Name)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(category)
+	RespondWithJSON(w, http.StatusCreated, category)
 }
 
 // GetAllCategories обрабатывает запрос на получение списка всех категорий
 func (h *CategoryHandler) GetAllCategories(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.service.GetAllCategories(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(categories)
+	RespondWithJSON(w, http.StatusOK, categories)
 }
 
 // UpdateCategory обрабатывает запрос на обновление категории
@@ -69,32 +62,28 @@ func (h *CategoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request)
 	categoryIDStr := chi.URLParam(r, "id")
 	categoryID, err := strconv.Atoi(categoryIDStr)
 	if err != nil {
-		http.Error(w, "invalid category ID", http.StatusBadRequest)
+		RespondWithError(w, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
 
 	var req categoryRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+	if err := utils.DecodeJSON(r.Body, &req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	// Валидация входных данных
 	if errs := utils.ValidateStruct(&req); len(errs) > 0 {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{"errors": errs})
+		RespondWithJSON(w, http.StatusBadRequest, map[string]interface{}{"errors": errs})
 		return
 	}
 
 	category, err := h.service.UpdateCategory(r.Context(), categoryID, req.Name)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(category)
+	RespondWithJSON(w, http.StatusOK, category)
 }
 
 // DeleteCategory обрабатывает запрос на удаление категории
@@ -102,12 +91,12 @@ func (h *CategoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request)
 	categoryIDStr := chi.URLParam(r, "id")
 	categoryID, err := strconv.Atoi(categoryIDStr)
 	if err != nil {
-		http.Error(w, "invalid category ID", http.StatusBadRequest)
+		RespondWithError(w, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
 
 	if err := h.service.DeleteCategory(r.Context(), categoryID); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
