@@ -3,6 +3,7 @@ package rep
 import (
 	"Personal-expense-tracking-system/models"
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -90,4 +91,16 @@ func (r *ExpenseRepo) Delete(ctx context.Context, expenseID int) error {
 	query := `DELETE FROM expenses WHERE id = $1`
 	_, err := r.db.Exec(ctx, query, expenseID)
 	return err
+}
+
+// GetTotalAmountByUserIDAndDateRange возвращает общую сумму расходов пользователя за определенный период
+func (r *ExpenseRepo) GetTotalAmountByUserIDAndDateRange(ctx context.Context, userID int, from, to time.Time) (float64, error) {
+	query := `
+		SELECT COALESCE(SUM(amount), 0)
+		FROM expenses
+		WHERE user_id = $1 AND created_at >= $2 AND created_at <= $3
+	`
+	var total float64
+	err := r.db.QueryRow(ctx, query, userID, from, to).Scan(&total)
+	return total, err
 }

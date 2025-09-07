@@ -37,8 +37,10 @@ func main() {
 	categoryRepo := rep.NewCategoryRepo(db)
 	categoryService := service.NewCategoryService(categoryRepo)
 
+	statsService := service.NewStatsService(expenseRepo) // Используем уже созданный expenseRepo
+
 	// Теперь передаем все сервисы в роутер
-	router := transport.NewRouter(userService, expenseService, categoryService, cfg.JWTSecret)
+	router := transport.NewRouter(userService, expenseService, categoryService, statsService, cfg.JWTSecret)
 
 	log.Printf("Starting server on port %s", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, router); err != nil {

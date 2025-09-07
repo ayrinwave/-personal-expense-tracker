@@ -9,7 +9,7 @@ import (
 )
 
 // NewRouter теперь принимает все сервисы и jwtSecret
-func NewRouter(userService *service.UserService, expenseService *service.ExpenseService, categoryService *service.CategoryService, jwtSecret string) http.Handler {
+func NewRouter(userService *service.UserService, expenseService *service.ExpenseService, categoryService *service.CategoryService, statsService *service.StatsService, jwtSecret string) http.Handler {
 	r := chi.NewRouter()
 
 	// --- Публичные маршруты ---
@@ -50,6 +50,10 @@ func NewRouter(userService *service.UserService, expenseService *service.Expense
 		r.Get("/api/categories", ch.GetAllCategories)
 		r.Put("/api/categories/{id}", ch.UpdateCategory)
 		r.Delete("/api/categories/{id}", ch.DeleteCategory)
+
+		// --- Маршруты для статистики ---
+		sh := NewStatsHandler(statsService)
+		r.Get("/api/stats/summary", sh.GetSummary)
 	})
 
 	return r
