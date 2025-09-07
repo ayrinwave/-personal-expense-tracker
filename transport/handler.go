@@ -2,6 +2,7 @@ package transport
 
 import (
 	"Personal-expense-tracking-system/service"
+	"Personal-expense-tracking-system/utils"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -17,8 +18,8 @@ func NewUserHandler(s *service.UserService) *UserHandler {
 
 // userAuthRequest используется и для регистрации, и для логина
 type userAuthRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=8"`
 }
 
 // loginResponse — это ответ при успешном входе
@@ -30,6 +31,14 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req userAuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Валидация входных данных
+	if errs := utils.ValidateStruct(&req); len(errs) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{"errors": errs})
 		return
 	}
 
@@ -51,11 +60,17 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Вызываем метод сервиса, который мы создадим на следующем шаге
+	// Валидация входных данных
+	if errs := utils.ValidateStruct(&req); len(errs) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{"errors": errs})
+		return
+	}
+
 	token, err := h.service.Login(r.Context(), req.Email, req.Password)
 	if err != nil {
 		log.Println(err)
-		// Важно возвращать общий ответ, чтобы не раскрывать, существует ли пользователь
 		http.Error(w, "invalid email or password", http.StatusUnauthorized)
 		return
 	}

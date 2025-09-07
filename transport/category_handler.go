@@ -2,6 +2,7 @@ package transport
 
 import (
 	"Personal-expense-tracking-system/service"
+	"Personal-expense-tracking-system/utils"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -21,7 +22,7 @@ func NewCategoryHandler(s *service.CategoryService) *CategoryHandler {
 
 // categoryRequest — это структура для парсинга тела запроса на создание/обновление категории
 type categoryRequest struct {
-	Name string `json:"name"`
+	Name string `json:"name" validate:"required"`
 }
 
 // CreateCategory обрабатывает запрос на создание новой категории
@@ -29,6 +30,14 @@ func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request)
 	var req categoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Валидация входных данных
+	if errs := utils.ValidateStruct(&req); len(errs) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{"errors": errs})
 		return
 	}
 
@@ -67,6 +76,14 @@ func (h *CategoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request)
 	var req categoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Валидация входных данных
+	if errs := utils.ValidateStruct(&req); len(errs) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{"errors": errs})
 		return
 	}
 

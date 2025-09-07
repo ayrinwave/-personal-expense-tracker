@@ -2,6 +2,7 @@ package transport
 
 import (
 	"Personal-expense-tracking-system/service"
+	"Personal-expense-tracking-system/utils"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -22,8 +23,8 @@ func NewExpenseHandler(s *service.ExpenseService) *ExpenseHandler {
 
 // createExpenseRequest — это структура для парсинга тела запроса на создание расхода
 type createExpenseRequest struct {
-	CategoryID int     `json:"category_id"`
-	Amount     float64 `json:"amount"`
+	CategoryID int     `json:"category_id" validate:"required,gt=0"`
+	Amount     float64 `json:"amount" validate:"required,gt=0"`
 	Note       string  `json:"note"`
 }
 
@@ -38,6 +39,14 @@ func (h *ExpenseHandler) CreateExpense(w http.ResponseWriter, r *http.Request) {
 	var req createExpenseRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Валидация входных данных
+	if errs := utils.ValidateStruct(&req); len(errs) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{"errors": errs})
 		return
 	}
 
@@ -91,6 +100,14 @@ func (h *ExpenseHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Валидация входных данных
+	if errs := utils.ValidateStruct(&req); len(errs) > 0 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{"errors": errs})
+		return
+	}
+
 	updatedExpense, err := h.service.UpdateExpense(r.Context(), userID, expenseID, req)
 	if err != nil {
 		if errors.Is(err, service.ErrForbidden) {
@@ -107,14 +124,12 @@ func (h *ExpenseHandler) UpdateExpense(w http.ResponseWriter, r *http.Request) {
 
 // DeleteExpense обрабатывает запрос на удаление расхода
 func (h *ExpenseHandler) DeleteExpense(w http.ResponseWriter, r *http.Request) {
-	// 1. Получаем ID пользователя из контекста
 	userID, ok := r.Context().Value(UserIDKey).(int)
 	if !ok {
 		http.Error(w, "could not get user ID from context", http.StatusInternalServerError)
 		return
 	}
 
-	// 2. Получаем ID расхода из URL
 	expenseIDStr := chi.URLParam(r, "id")
 	expenseID, err := strconv.Atoi(expenseIDStr)
 	if err != nil {
@@ -122,18 +137,14 @@ func (h *ExpenseHandler) DeleteExpense(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 3. Вызываем сервис для удаления
 	if err := h.service.DeleteExpense(r.Context(), userID, expenseID); err != nil {
-		// 4. Обрабатываем ошибки
 		if errors.Is(err, service.ErrForbidden) {
 			http.Error(w, "you don't have permission to delete this expense", http.StatusForbidden)
 		} else {
-			// Здесь можно добавить обработку ошибки "не найдено" (404), но пока оставим общую
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		return
 	}
 
-	// 5. Отправляем успешный ответ без тела
 	w.WriteHeader(http.StatusNoContent)
 }
